@@ -15,7 +15,7 @@ void conv_filter(int imgHeight, int imgWidth, int imgHeightF, int imgWidthF,
 	auto imgWidthFbyte = imgWidthF * 4;
 	auto imgLengthbyte = imgHeight * imgWidthbyte;
 	// 0 <= row < 1200
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (auto row = 0; row < imgLengthbyte; row+=imgWidthFbyte)
 	{
 		// 0 <= col < 1920
@@ -37,9 +37,11 @@ void conv_filter(int imgHeight, int imgWidth, int imgHeightF, int imgWidthF,
 			}
 			for (auto rgba = 0; rgba < 4; rgba++)
 			{
-				//fval[rgba] < 0 ? fval[rgba] = 0 : fval[rgba] > 255 ? fval[rgba] = 255 : 0;
+				auto orig = imgFloatSrc[(2 + 2 * imgWidthF) * 4 + col + row + rgba];
 				fval[rgba] = fval[rgba] < 0 ? 0 : fval[rgba] > 255 ? 255 : fval[rgba];
-			}
+				fval[rgba] = orig + (orig - fval[rgba]);
+				fval[rgba] = fval[rgba] < 0 ? 0 : fval[rgba] > 255 ? 255 : fval[rgba];
+			}	
 			// kimenetí pixel írása
 			memcpy(imgFloatDst + rw_base + col + row, fval, 4 * sizeof(float));
 		}
@@ -110,7 +112,14 @@ void conv_filter_sse(int imgHeight, int imgWidth, int imgHeightF, int imgWidthF,
 			r_sse = _mm_min_ps(const_255, r_sse);
 
 			// kimenetí pixel írása
+			b_sse = _mm_load_ps(imgFloatSrc + row + col + (2 + 2 * imgWidthF << 2));
+			r_sse = _mm_add_ps(b_sse, _mm_sub_ps(b_sse, r_sse));
+
+			r_sse = _mm_max_ps(const_0, r_sse);
+			r_sse = _mm_min_ps(const_255, r_sse);
 			_mm_store_ps(imgFloatDst + rw_base + col + row, r_sse);
+			
+			
 		}
 	}
 }

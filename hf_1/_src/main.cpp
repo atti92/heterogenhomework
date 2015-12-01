@@ -70,11 +70,11 @@ void main()
 	float *imgFloatRes;
     imgFloatRes = static_cast<float *>(_aligned_malloc(4*imgWidthF*imgHeightF*sizeof(float), 16));
 
-	float filter_laplace_old[] = {-1.0, -1.0, -1.0, -1.0, -1.0,
-		                      -1.0, -1.0, -1.0, -1.0, -1.0,
-		                      -1.0, -1.0, 24.0, -1.0, -1.0,
-		                      -1.0, -1.0, -1.0, -1.0, -1.0,
-		                      -1.0, -1.0, -1.0, -1.0, -1.0};
+	float filter_gaussian[] = {2.0,  4.0,  5.0,  4.0,  2.0,
+		                       4.0,  9.0, 12.0,  9.0,  4.0,
+		                       5.0, 12.0, 15.0, 12.0,  5.0,
+		                       4.0,  9.0, 12.0,  9.0,  4.0,
+		                       2.0,  4.0,  5.0,  4.0,  2.0};
 
 	float filter_laplace_2[] = {	 1.0,  4.0,  6.0,  4.0,  1.0,
 								 4.0, 16.0, 24.0, 16.0,  4.0,
@@ -92,17 +92,22 @@ void main()
 	{
 		filter_laplace[i] /= -256;
 	}
+	for (size_t i = 0; i < 25; i++)
+	{
+		filter_gaussian[i] /= 159;
+	}
 
     s0 = clock();
 for (auto r=0; r<RUNS; r++)
 {
-    conv_filter_sse(imgHeight, imgWidth, imgHeightF, imgWidthF,
+    conv_filter(imgHeight, imgWidth, imgHeightF, imgWidthF,
 				imgFOfssetH, imgFOfssetW,
-				filter_laplace, imgFloat, imgFloatRes);
+				filter_gaussian, imgFloat, imgFloatRes);
 }
     e0 = clock();
     d0 = static_cast<double>(e0-s0)/CLOCKS_PER_SEC;
-    printf("CPU TIME: %4.4f\n", d0);
+    printf("total CPU TIME: %4.4fs\n", d0);
+    printf("1 cycle CPU TIME: %4.4fms\n", d0 * 1000 / RUNS);
 
 
 	float *imgFloatWrite;
