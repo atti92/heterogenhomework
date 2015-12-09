@@ -171,6 +171,7 @@
       <AdditionalLibraryDirectories>.\DevIL_win32\lib</AdditionalLibraryDirectories>
       <OutputFile>$(Platform)/$(Configuration)/sse_lab.exe</OutputFile>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <Profile>true</Profile>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -208,6 +209,7 @@
       <AdditionalLibraryDirectories>.\DevIL_x64\lib</AdditionalLibraryDirectories>
       <OutputFile>$(Platform)/$(Configuration)/sse_lab.exe</OutputFile>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <Profile>true</Profile>
     </Link>
     <PostBuildEvent>
       <Command>

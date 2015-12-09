@@ -15,7 +15,6 @@ void conv_filter(int imgHeight, int imgWidth, int imgHeightF, int imgWidthF,
 	auto imgWidthFbyte = imgWidthF * 4;
 	auto imgLengthbyte = imgHeight * imgWidthbyte;
 	// 0 <= row < 1200
-//#pragma omp parallel for
 	for (auto row = 0; row < imgLengthbyte; row+=imgWidthFbyte)
 	{
 		// 0 <= col < 1920
@@ -55,9 +54,9 @@ void conv_filter_sse(int imgHeight, int imgWidth, int imgHeightF, int imgWidthF,
 {
 
 	//1.
-	const __declspec(align(16)) auto const_0 = _mm_set_ps(0.0, 0.0, 0.0, 0.0);
+	const register __declspec(align(16)) auto const_0 = _mm_set_ps(0.0, 0.0, 0.0, 0.0);
 	//2.
-    const __declspec(align(16)) auto const_255 = _mm_set_ps(255.0, 255.0, 255.0, 255.0);
+    const register __declspec(align(16)) auto const_255 = _mm_set_ps(255.0, 255.0, 255.0, 255.0);
 
 	//3.
 	__declspec(align(16)) __m128 filter_l[FILTER_SIZE];
@@ -73,53 +72,28 @@ void conv_filter_sse(int imgHeight, int imgWidth, int imgHeightF, int imgWidthF,
 	const auto imgWidthFbyte = imgWidthF << 2;
 	const auto imgLengthbyte = imgHeight * imgWidthbyte;
 	//4.
-	__declspec(align(16)) __m128 a_sse;
-	//5.
-	__declspec(align(16)) __m128 b_sse;
-	//6.
-	__declspec(align(16)) __m128 c_sse;
-	//7.
-	__declspec(align(16)) __m128 d_sse;
+	register __declspec(align(16)) __m128 a_sse;
 	//8. reg
-	__declspec(align(16)) __m128 r_sse;
+	register __declspec(align(16)) __m128 r_sse;
 
 #pragma omp parallel for
-	for (auto row = 0; row < imgLengthbyte; row += imgWidthFbyte)
+	for (auto row = 0; row < imgLengthbyte; row += 4)
 	{
-		// 0 <= col < 1920
-		for (auto col = 0; col < imgWidthbyte; col += 4)
-		{
 			// RGBA komponensek akkumulátora
 			r_sse = _mm_setzero_ps();
 			// konvolúció minden komponensre
-			for (auto y = 0; y < 5; y++ )
-			{
-				a_sse = _mm_load_ps(imgFloatSrc + row + col + (y * imgWidthF << 2));
-				b_sse = _mm_load_ps(imgFloatSrc + row + col + (1 + y * imgWidthF << 2));
-				c_sse = _mm_load_ps(imgFloatSrc + row + col + (2 + y * imgWidthF << 2));
-				d_sse = _mm_load_ps(imgFloatSrc + row + col + (3 + y * imgWidthF << 2));
-				
-				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(a_sse, filter_l[y * 5]));
-				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(b_sse, filter_l[1 + y * 5]));
-				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(c_sse, filter_l[2 + y * 5]));
-				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(d_sse, filter_l[3 + y * 5]));
-
-				a_sse = _mm_load_ps(imgFloatSrc + row + col + (4 + y * imgWidthF << 2));
-				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(a_sse, filter_l[4 + y * 5]));
+			for (auto y = 0; y < FILTER_H; y++ )
+			{		
+				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(_mm_load_ps(imgFloatSrc + row + (y * imgWidthFbyte)), filter_l[5 * y]));
+				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(_mm_load_ps(imgFloatSrc + row + (4 + y * imgWidthFbyte)), filter_l[1 + 5 * y]));
+				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(_mm_load_ps(imgFloatSrc + row + (8 + y * imgWidthFbyte)), filter_l[2 + 5 * y]));
+				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(_mm_load_ps(imgFloatSrc + row + (12 + y * imgWidthFbyte)), filter_l[3 + 5 * y]));
+				r_sse = _mm_add_ps(r_sse, _mm_mul_ps(_mm_load_ps(imgFloatSrc + row + (16 + y * imgWidthFbyte)), filter_l[4 + 5 * y]));
 			}
+			
+			a_sse = _mm_load_ps(imgFloatSrc + row + 8 + 2 * imgWidthFbyte);
 			//számítás eredményének limitálása 0-255 közé
-			r_sse = _mm_max_ps(const_0, r_sse);
-			r_sse = _mm_min_ps(const_255, r_sse);
-
 			// kimenetí pixel írása
-			b_sse = _mm_load_ps(imgFloatSrc + row + col + (2 + 2 * imgWidthF << 2));
-			r_sse = _mm_add_ps(b_sse, _mm_sub_ps(b_sse, r_sse));
-
-			r_sse = _mm_max_ps(const_0, r_sse);
-			r_sse = _mm_min_ps(const_255, r_sse);
-			_mm_store_ps(imgFloatDst + rw_base + col + row, r_sse);
-			
-			
-		}
+			_mm_store_ps(imgFloatDst + rw_base + row, _mm_min_ps(const_255, _mm_add_ps(a_sse, _mm_max_ps(const_0, _mm_sub_ps(a_sse, _mm_min_ps(const_255, _mm_max_ps(const_0, r_sse)))))));
 	}
 }

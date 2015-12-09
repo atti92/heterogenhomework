@@ -76,22 +76,6 @@ void main()
 		                       4.0,  9.0, 12.0,  9.0,  4.0,
 		                       2.0,  4.0,  5.0,  4.0,  2.0};
 
-	float filter_laplace_2[] = {	 1.0,  4.0,  6.0,  4.0,  1.0,
-								 4.0, 16.0, 24.0, 16.0,  4.0,
-								 6.0, 24.0,-476.0,24.0,  6.0,
-								 4.0, 16.0, 24.0, 16.0,  4.0,
-								 1.0,  4.0,  6.0,  4.0,  1.0 };
-
-	float filter_laplace[] = {	1.0,  4.0,  6.0,  4.0,  1.0,
-								4.0, 16.0, 24.0, 16.0,  4.0,
-								6.0, 24.0,-476.0,24.0,  6.0,
-								4.0, 16.0, 24.0, 16.0,  4.0,
-								1.0,  4.0,  6.0,  4.0,  1.0 };
-
-	for (size_t i = 0; i < 25; i++)
-	{
-		filter_laplace[i] /= -256;
-	}
 	for (size_t i = 0; i < 25; i++)
 	{
 		filter_gaussian[i] /= 159;
@@ -100,7 +84,7 @@ void main()
     s0 = clock();
 for (auto r=0; r<RUNS; r++)
 {
-    conv_filter(imgHeight, imgWidth, imgHeightF, imgWidthF,
+    conv_filter_sse(imgHeight, imgWidth, imgHeightF, imgWidthF,
 				imgFOfssetH, imgFOfssetW,
 				filter_gaussian, imgFloat, imgFloatRes);
 }
